@@ -153,7 +153,59 @@ class BudgetCalculations {
     });
     return results;
   }
+  /// Category breakdown for the month, excluding savings (matches JS
+  /// `categoryChart`, which filters out the savings bucket since this
+  /// chart is about discretionary/needed spending, not saving).
+  /// Collapses everything past the top 6 into "Other", same as original.
+  static List<CategoryAmount> categoryBreakdown(List<LedgerTransaction> monthTransactions) {
+    final spendOnly = monthTransactions.where((t) => (bucketOf[t.category] ?? BudgetBucket.wants) != BudgetBucket.savings);
+    final byCategory = <String, double>{};
+    for (final t in spendOnly) {
+      byCategory[t.category] = (byCategory[t.category] ?? 0) + t.amount;
+    }
+    var items = byCategory.entries.map((e) => CategoryAmount(e.key, e.value)).toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+
+    if (items.length > 6) {
+      final top = items.take(6).toList();
+      final otherTotal = items.skip(6).fold(0.0, (sum, i) => sum + i.amount);
+      top.add(CategoryAmount('Other', otherTotal));
+      items = top;
+    }
+    return items;
+  }
+
+  /// Top 5 spending places for the month, excluding savings.
+  /// Port of JS `topPlacesChart`.
+  static List<PlaceAmount> topPlaces(List<LedgerTransaction> monthTransactions) {
+    final spendOnly = monthTransactions.where((t) => (bucketOf[t.category] ?? BudgetBucket.wants) != BudgetBucket.savings);
+    final byPlace = <String, double>{};
+    final bucketByPlace = <String, BudgetBucket>{};
+    for (final t in spendOnly) {
+      byPlace[t.place] = (byPlace[t.place] ?? 0) + t.amount;
+      bucketByPlace[t.place] = bucketOf[t.category] ?? BudgetBucket.wants;
+    }
+    final items = byPlace.entries
+        .map((e) => PlaceAmount(e.key, e.value, bucketByPlace[e.key]!))
+        .toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    return items.take(5).toList();
+  }
 }
+
+class CategoryAmount {
+  final String category;
+  final double amount;
+  const CategoryAmount(this.category, this.amount);
+}
+
+class PlaceAmount {
+  final String place;
+  final double amount;
+  final BudgetBucket bucket;
+  const PlaceAmount(this.place, this.amount, this.bucket);
+}
+
 class UpcomingBill {
   final RecurringBill bill;
   final String date;

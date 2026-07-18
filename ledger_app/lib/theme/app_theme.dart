@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/enums.dart';
+import '../models/category.dart';
 
 /// Exact port of the PWA's `:root` CSS custom properties —
 /// "Luxury Palette — Muted Gold + Deep Teal". Values copied directly
@@ -37,6 +38,33 @@ extension BudgetBucketColor on BudgetBucket {
         return LedgerColors.savings;
     }
   }
+}
+
+/// Per-category color shades, cycling within each bucket's color
+/// family. Exact port of the PWA's FAMILY arrays + CAT_COLOR
+/// assignment loop, so chart colors match the original design intent
+/// (subtle variation within a bucket, not one flat color per category).
+class CategoryColors {
+  static const Map<BudgetBucket, List<Color>> _family = {
+    BudgetBucket.needs: [Color(0xFF4A6D6A), Color(0xFF5A7D7A), Color(0xFF7A9D9A), Color(0xFF9ABDB8)],
+    BudgetBucket.wants: [Color(0xFFA8776A), Color(0xFFB8877A), Color(0xFFD09F92), Color(0xFFE0B7AA)],
+    BudgetBucket.savings: [Color(0xFFD98AA6), Color(0xFFE8A0B4), Color(0xFFF0B6C6), Color(0xFFF6CCD6)],
+  };
+
+  static final Map<String, Color> _byCategory = _build();
+
+  static Map<String, Color> _build() {
+    final result = <String, Color>{};
+    final idx = {BudgetBucket.needs: 0, BudgetBucket.wants: 0, BudgetBucket.savings: 0};
+    for (final cat in categories) {
+      final shades = _family[cat.bucket]!;
+      result[cat.name] = shades[idx[cat.bucket]! % shades.length];
+      idx[cat.bucket] = idx[cat.bucket]! + 1;
+    }
+    return result;
+  }
+
+  static Color forCategory(String category) => _byCategory[category] ?? LedgerColors.faint;
 }
 
 class LedgerTheme {

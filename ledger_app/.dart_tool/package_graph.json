@@ -8,6 +8,7 @@
       "version": "0.1.0",
       "dependencies": [
         "cupertino_icons",
+        "fl_chart",
         "flutter",
         "hive",
         "hive_flutter",
@@ -47,6 +48,14 @@
       "name": "cupertino_icons",
       "version": "1.0.9",
       "dependencies": []
+    },
+    {
+      "name": "fl_chart",
+      "version": "0.68.0",
+      "dependencies": [
+        "equatable",
+        "flutter"
+      ]
     },
     {
       "name": "provider",
@@ -174,6 +183,14 @@
         "stream_channel",
         "string_scanner",
         "term_glyph"
+      ]
+    },
+    {
+      "name": "equatable",
+      "version": "2.1.0",
+      "dependencies": [
+        "collection",
+        "meta"
       ]
     },
     {

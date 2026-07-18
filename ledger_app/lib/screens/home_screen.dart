@@ -24,7 +24,7 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: LedgerColors.bg,
       body: SafeArea(
-      child: SingleChildScrollView(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

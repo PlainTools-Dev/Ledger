@@ -53,6 +53,11 @@ class LedgerAppState extends ChangeNotifier {
         today: DateTime.now(),
       );
 
+  List<CategoryAmount> get categoryBreakdownThisMonth =>
+      BudgetCalculations.categoryBreakdown(transactionsThisMonth);
+
+  List<PlaceAmount> get topPlacesThisMonth => BudgetCalculations.topPlaces(transactionsThisMonth);
+
   bool get hasAnyData => storage.getAllTransactions().isNotEmpty || storage.getRecurring().isNotEmpty;
 
   // === Writes — all notify listeners so screens rebuild ===

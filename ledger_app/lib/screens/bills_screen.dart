@@ -120,20 +120,21 @@ class _BillsScreenState extends State<BillsScreen> {
             children: [
               Row(
                 children: [
-                  TextButton(onPressed: widget.onBack, child: const Text('< Back')),
+                  TextButton(onPressed: widget.onBack, child: const Text('‹ Back')),
                   const SizedBox(width: 8),
                   Text('Bills', style: Theme.of(context).textTheme.titleLarge),
                 ],
               ),
               const SizedBox(height: 16),
 
+              // Upcoming bills box, matches renderBills' upcomingBox
               if (upcoming.isNotEmpty)
                 GlassCard(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Upcoming bills - next 30 days',
+                      Text('Upcoming bills · next 30 days',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: LedgerColors.text)),
                       const SizedBox(height: 8),
                       ...upcoming.map((b) => Padding(
@@ -141,7 +142,7 @@ class _BillsScreenState extends State<BillsScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('${b.date} - ${b.bill.name}', style: TextStyle(fontSize: 12, color: LedgerColors.muted)),
+                                Text('${b.date} · ${b.bill.name}', style: TextStyle(fontSize: 12, color: LedgerColors.muted)),
                                 Text(_money(b.bill.amount), style: LedgerTheme.numberStyle.copyWith(fontSize: 12)),
                               ],
                             ),
@@ -163,6 +164,7 @@ class _BillsScreenState extends State<BillsScreen> {
                 ),
               const SizedBox(height: 20),
 
+              // Add recurring expense form
               Text('ADD RECURRING EXPENSE', style: TextStyle(fontSize: 12, color: LedgerColors.muted, letterSpacing: 1)),
               const SizedBox(height: 10),
               TextField(
@@ -208,6 +210,7 @@ class _BillsScreenState extends State<BillsScreen> {
               ),
               const SizedBox(height: 24),
 
+              // List of all recurring bills
               if (allBills.isEmpty)
                 Text('No recurring expenses saved yet.', style: TextStyle(fontSize: 13, color: LedgerColors.faint))
               else
@@ -264,7 +267,7 @@ class _BillRow extends StatelessWidget {
                   child: Text(bill.category, style: TextStyle(fontSize: 10, color: bucket.color)),
                 ),
                 const SizedBox(width: 8),
-                Text('Due day ${bill.day} - monthly', style: TextStyle(fontSize: 11, color: LedgerColors.muted)),
+                Text('Due day ${bill.day} · monthly', style: TextStyle(fontSize: 11, color: LedgerColors.muted)),
               ],
             ),
             const SizedBox(height: 10),
