@@ -4,6 +4,7 @@ import 'logger_screen.dart';
 import 'allocator_screen.dart';
 import 'bills_screen.dart';
 import 'gauge_screen.dart';
+import 'history_screen.dart';
 
 class LedgerShell extends StatefulWidget {
   const LedgerShell({super.key});
@@ -16,7 +17,7 @@ class _LedgerShellState extends State<LedgerShell> {
   String _route = 'home';
 
   void _goTo(String route) {
-    const builtScreens = {'home', 'logger', 'allocator', 'bills', 'gauge'};
+    const builtScreens = {'home', 'logger', 'allocator', 'bills', 'gauge', 'history'};
     setState(() => _route = builtScreens.contains(route) ? route : 'home');
   }
 
@@ -31,6 +32,8 @@ class _LedgerShellState extends State<LedgerShell> {
         return BillsScreen(onBack: () => _goTo('home'));
       case 'gauge':
         return GaugeScreen(onBack: () => _goTo('home'));
+      case 'history':
+        return HistoryScreen(onBack: () => _goTo('home'));
       case 'home':
       default:
         return HomeScreen(onNavigate: _goTo);

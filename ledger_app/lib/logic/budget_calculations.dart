@@ -6,13 +6,7 @@ import '../models/enums.dart';
 import '../models/category.dart';
 import 'month_utils.dart';
 
-/// Direct ports of the PWA's calculation functions. Kept as pure
-/// functions (no state/storage dependency) so they're testable in
-/// isolation and match the original's separation of calculation from
-/// rendering.
 class BudgetCalculations {
-  /// Sums transactions into needs/wants/savings totals for one month.
-  /// Port of JS `bucketTotals(k)`.
   static Map<BudgetBucket, double> bucketTotals(List<LedgerTransaction> monthTransactions) {
     final totals = {
       BudgetBucket.needs: 0.0,
@@ -20,14 +14,12 @@ class BudgetCalculations {
       BudgetBucket.savings: 0.0,
     };
     for (final t in monthTransactions) {
-      final bucket = bucketOf[t.category] ?? BudgetBucket.wants; // JS default fallback
+      final bucket = bucketOf[t.category] ?? BudgetBucket.wants;
       totals[bucket] = (totals[bucket] ?? 0) + t.amount;
     }
     return totals;
   }
 
-  /// Sum of recurring bills not yet posted this month.
-  /// Port of JS `unpaidBillsTotal(k)`.
   static double unpaidBillsTotal(
     List<RecurringBill> recurring,
     Set<String> appliedBillIdsThisMonth,
@@ -38,8 +30,6 @@ class BudgetCalculations {
     });
   }
 
-  /// "Safe to spend" — income minus what's already spent minus the
-  /// remaining savings goal minus upcoming bills. Port of JS `safeToSpend(k)`.
   static SafeToSpendResult safeToSpend({
     required double income,
     required List<LedgerTransaction> monthTransactions,
@@ -62,11 +52,6 @@ class BudgetCalculations {
     );
   }
 
-  /// Spending velocity/pace-of-month check. Port of JS `velocityBlock`
-  /// logic (the message-generation part, separated from rendering).
-  /// Only meaningful for the current month, matching the original's
-  /// `if(k!==monthKey(new Date())) return ""` guard — caller decides
-  /// whether to show this at all.
   static VelocityResult velocity({
     required DateTime now,
     required double income,
@@ -98,10 +83,6 @@ class BudgetCalculations {
     );
   }
 
-  /// Generates the coaching "nudge" text per bucket. Direct port of
-  /// JS `nudge(b,aPct,tPct,income)` — kept as data (NudgeResult) rather
-  /// than pre-formatted text, so the UI layer controls exact phrasing/
-  /// formatting instead of parsing HTML strings like the original did.
   static NudgeResult nudge({
     required BudgetBucket bucket,
     required double actualPct,
@@ -122,8 +103,7 @@ class BudgetCalculations {
     if (diff <= 5) return NudgeResult(tone: NudgeTone.caution, dollarsGap: dollars, isAboveGoal: false);
     return NudgeResult(tone: NudgeTone.warning, dollarsGap: dollars, isAboveGoal: false);
   }
-  /// Bills due within [limitDays] days, across up to 3 months ahead.
-  /// Port of JS `upcomingBills(limitDays)`.
+
   static List<UpcomingBill> upcomingBills({
     required List<RecurringBill> recurring,
     required int limitDays,
@@ -153,10 +133,7 @@ class BudgetCalculations {
     });
     return results;
   }
-  /// Category breakdown for the month, excluding savings (matches JS
-  /// `categoryChart`, which filters out the savings bucket since this
-  /// chart is about discretionary/needed spending, not saving).
-  /// Collapses everything past the top 6 into "Other", same as original.
+
   static List<CategoryAmount> categoryBreakdown(List<LedgerTransaction> monthTransactions) {
     final spendOnly = monthTransactions.where((t) => (bucketOf[t.category] ?? BudgetBucket.wants) != BudgetBucket.savings);
     final byCategory = <String, double>{};
@@ -175,8 +152,6 @@ class BudgetCalculations {
     return items;
   }
 
-  /// Top 5 spending places for the month, excluding savings.
-  /// Port of JS `topPlacesChart`.
   static List<PlaceAmount> topPlaces(List<LedgerTransaction> monthTransactions) {
     final spendOnly = monthTransactions.where((t) => (bucketOf[t.category] ?? BudgetBucket.wants) != BudgetBucket.savings);
     final byPlace = <String, double>{};
@@ -190,6 +165,65 @@ class BudgetCalculations {
         .toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
     return items.take(5).toList();
+  }
+
+  static List<MonthSummary> monthlySummaries({
+    required List<String> sortedMonthKeys,
+    required Map<String, double> incomeByMonth,
+    required List<LedgerTransaction> allTransactions,
+  }) {
+    final summaries = <MonthSummary>[];
+    double? prevNet;
+
+    for (final key in sortedMonthKeys) {
+      final monthTx = allTransactions.where((t) => t.monthKey == key).toList();
+      final totals = bucketTotals(monthTx);
+      final income = incomeByMonth[key] ?? 0;
+      final expenses = (totals[BudgetBucket.needs] ?? 0) + (totals[BudgetBucket.wants] ?? 0);
+      final savingsPct = income > 0 ? (totals[BudgetBucket.savings] ?? 0) / income * 100 : 0.0;
+      final net = income - expenses;
+
+      MonthTrend trend = MonthTrend.flat;
+      if (prevNet != null) {
+        if (net > prevNet + 0.01) {
+          trend = MonthTrend.up;
+        } else if (net < prevNet - 0.01) {
+          trend = MonthTrend.down;
+        }
+      }
+
+      summaries.add(MonthSummary(
+        monthKey: key,
+        income: income,
+        expenses: expenses,
+        savingsPct: savingsPct,
+        net: net,
+        trend: trend,
+      ));
+      prevNet = net;
+    }
+    return summaries;
+  }
+
+  static List<CategoryTrend> categoryTrends(List<LedgerTransaction> allTransactions) {
+    final keys = allTransactions.map((t) => t.monthKey).toSet().toList()..sort();
+    if (keys.length < 2) return [];
+    final recent = keys.length > 3 ? keys.sublist(keys.length - 3) : keys;
+
+    final byCategory = <String, Map<String, double>>{};
+    for (final t in allTransactions) {
+      if (!recent.contains(t.monthKey)) continue;
+      byCategory.putIfAbsent(t.category, () => {});
+      byCategory[t.category]![t.monthKey] = (byCategory[t.category]![t.monthKey] ?? 0) + t.amount;
+    }
+
+    final rows = byCategory.entries.map((e) {
+      final values = recent.map((mk) => e.value[mk] ?? 0.0).toList();
+      return CategoryTrend(category: e.key, months: recent, values: values);
+    }).toList()
+      ..sort((a, b) => b.values.last.compareTo(a.values.last));
+
+    return rows.take(6).toList();
   }
 }
 
@@ -253,4 +287,38 @@ class NudgeResult {
   final double dollarsGap;
   final bool isAboveGoal;
   const NudgeResult({required this.tone, required this.dollarsGap, required this.isAboveGoal});
+}
+
+class MonthSummary {
+  final String monthKey;
+  final double income;
+  final double expenses;
+  final double savingsPct;
+  final double net;
+  final MonthTrend trend;
+  const MonthSummary({
+    required this.monthKey,
+    required this.income,
+    required this.expenses,
+    required this.savingsPct,
+    required this.net,
+    required this.trend,
+  });
+}
+
+enum MonthTrend { up, down, flat }
+
+class CategoryTrend {
+  final String category;
+  final List<String> months;
+  final List<double> values;
+  const CategoryTrend({required this.category, required this.months, required this.values});
+
+  MonthTrend get trend {
+    final first = values.first;
+    final last = values.last;
+    if (last > first * 1.1) return MonthTrend.up;
+    if (last < first * 0.9) return MonthTrend.down;
+    return MonthTrend.flat;
+  }
 }

@@ -6,10 +6,6 @@ import '../models/budget_plan.dart';
 import '../logic/budget_calculations.dart';
 import '../logic/month_utils.dart';
 
-/// Central state controller screens read/write through — wraps
-/// HiveLedgerStorage and exposes the "current viewed month" concept
-/// the PWA used globally (`viewMonth`), plus derived calculations so
-/// screens don't each reimplement bucket totals / safe-to-spend.
 class LedgerAppState extends ChangeNotifier {
   final HiveLedgerStorage storage;
   String viewMonth = MonthUtils.keyFor(DateTime.now());
@@ -26,7 +22,6 @@ class LedgerAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // === Derived reads for the current viewMonth ===
   double get incomeThisMonth => storage.getIncome()[viewMonth] ?? 0;
   List<LedgerTransaction> get transactionsThisMonth => storage.getTransactionsForMonth(viewMonth);
   BudgetPlan get plan => storage.getPlan();
@@ -60,7 +55,21 @@ class LedgerAppState extends ChangeNotifier {
 
   bool get hasAnyData => storage.getAllTransactions().isNotEmpty || storage.getRecurring().isNotEmpty;
 
-  // === Writes — all notify listeners so screens rebuild ===
+  List<String> get allMonthKeysAscending {
+    final keys = storage.getAllTransactions().map((t) => t.monthKey).toSet().toList();
+    keys.sort();
+    return keys;
+  }
+
+  List<MonthSummary> get monthlyHistorySummaries => BudgetCalculations.monthlySummaries(
+        sortedMonthKeys: allMonthKeysAscending,
+        incomeByMonth: storage.getIncome(),
+        allTransactions: storage.getAllTransactions(),
+      );
+
+  List<CategoryTrend> get categoryTrendsData =>
+      BudgetCalculations.categoryTrends(storage.getAllTransactions());
+
   Future<void> addTransaction(LedgerTransaction tx) async {
     await storage.addTransaction(tx);
     notifyListeners();
@@ -102,7 +111,7 @@ class LedgerAppState extends ChangeNotifier {
 
   Future<void> applyRecurringBill(RecurringBill bill) async {
     final applied = storage.getAppliedRecurring()[viewMonth] ?? {};
-    if (applied.contains(bill.id)) return; // already applied, matches JS guard
+    if (applied.contains(bill.id)) return;
     final date = MonthUtils.billDateFor(viewMonth, bill.day);
     await storage.addTransaction(LedgerTransaction(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
