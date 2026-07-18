@@ -1,0 +1,16 @@
+{
+  "name": "Flutter Ledger App",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "postCreateCommand": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter && $HOME/flutter/bin/flutter config --enable-web && $HOME/flutter/bin/flutter doctor",
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/vscode/flutter/bin"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.dart-code",
+        "Dart-Code.flutter"
+      ]
+    }
+  }
+}

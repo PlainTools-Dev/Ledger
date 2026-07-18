@@ -1,0 +1,25 @@
+name: ledger_app
+description: Local-first monthly budgeting app - needs/wants/savings tracking with adaptive charts.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  provider: ^6.1.2
+  cupertino_icons: ^1.0.6
+  # Added once we reach the charts phase (gauge/dashboard screen):
+  # fl_chart: ^0.68.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
